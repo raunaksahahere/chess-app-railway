@@ -75,8 +75,30 @@ function cancelDisconnectTimer(roomId, color) {
   return false;
 }
 
-// Note: Stockfish move calculation is done client-side via stockfish.online API.
-// No AI proxy needed on the server — zero API keys required.
+// ─────────────────────────── Stockfish proxy ────────────────────────────────
+// Browsers can't call stockfish.online directly (CORS). We proxy it here.
+app.post('/api/best-move', async (req, res) => {
+  const { fen, depth = 14 } = req.body;
+  if (!fen) return res.status(400).json({ error: 'Missing fen' });
+
+  try {
+    const url = `https://stockfish.online/api/s/v2.php?fen=${encodeURIComponent(fen)}&depth=${Math.min(Number(depth), 20)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    let raw = data?.bestmove ?? '';
+    raw = raw.replace(/^bestmove\s+/i, '').trim().split(/\s+/)[0].toLowerCase();
+
+    if (data.success && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(raw)) {
+      return res.json({ move: raw });
+    }
+    res.status(422).json({ error: 'Stockfish returned no valid move' });
+  } catch (err) {
+    console.error('Stockfish proxy error:', err.message);
+    res.status(500).json({ error: 'Stockfish unavailable' });
+  }
+});
+
 
 app.get('/health', (_, res) =>
   res.json({ ok: true, rooms: rooms.size, queue: randomQueue.length })
