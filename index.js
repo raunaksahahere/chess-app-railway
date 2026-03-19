@@ -1,7 +1,7 @@
 const express = require('express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
-const { Chess } = require('chess.js');
+const Chess = require('chess.js').Chess || require('chess.js');
 const cors = require('cors');
 
 const app = express();
@@ -185,14 +185,14 @@ io.on('connection', (socket) => {
       const fen = room.chess.fen();
       io.to(roomId).emit('move_made', { move: result, fen, turn: room.chess.turn() });
 
-      if (room.chess.isGameOver()) {
+      if (room.chess.game_over()) {
         room.status = 'finished';
         let reason = 'draw';
         let winner = null;
-        if (room.chess.isCheckmate()) { reason = 'checkmate'; winner = turn; }
-        else if (room.chess.isStalemate()) reason = 'stalemate';
-        else if (room.chess.isInsufficientMaterial()) reason = 'insufficient';
-        else if (room.chess.isThreefoldRepetition()) reason = 'repetition';
+        if (room.chess.in_checkmate()) { reason = 'checkmate'; winner = turn; }
+        else if (room.chess.in_stalemate()) reason = 'stalemate';
+        else if (room.chess.insufficient_material()) reason = 'insufficient';
+        else if (room.chess.in_threefold_repetition()) reason = 'repetition';
 
         io.to(roomId).emit('game_over', {
           reason, winner,
