@@ -3,6 +3,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const Chess = require('chess.js').Chess || require('chess.js');
 const cors = require('cors');
+const fetch = require('node-fetch'); // works on any Node version
 
 const app = express();
 app.use(cors({ origin: '*' }));
